@@ -1,260 +1,319 @@
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>도림고 송도 체험학습 빙고</title>
+    <title>2026 도림고 1학년 현장체험학습 미션 빙고</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap');
-        body { font-family: 'Pretendard', sans-serif; background-color: #f1f5f9; overflow-x: hidden; }
-        
-        /* 시작 화면 레이어 */
-        #loginOverlay {
-            position: fixed; inset: 0; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            z-index: 100; display: flex; align-items: center; justify-content: center; padding: 2rem;
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+            overscroll-behavior: none;
+            overflow-x: hidden;
         }
-
-        /* 빙고판 스타일 */
-        .bingo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .bingo-cell { aspect-ratio: 1 / 1; perspective: 1000px; }
-        .cell-inner { 
-            position: relative; width: 100%; height: 100%; text-align: center; 
-            transition: transform 0.6s; transform-style: preserve-3d; cursor: pointer;
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            background-color: #1e293b;
+            padding: 6px;
+            border-radius: 16px;
         }
-        .cell-inner.is-flipped { transform: rotateY(180deg); }
-        .cell-front, .cell-back {
-            position: absolute; width: 100%; height: 100%; backface<!DOCTYPE html>
--visibility: hidden;
-            display: flex; align-items: center; justify-content: center; padding: 8px;
-            border-radius: 16px; border: 2px solid #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            font-size: 0.8rem; font-weight: bold; word-break: keep-all;
+        .bingo-cell {
+            aspect-ratio: 1 / 1;
+            background: #ffffff;
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 4px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            line-height: 1.2;
+            word-break: keep-all;
+            border-radius: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        .cell-front { background-color: #fff; color: #1e293b; }
-        .cell-back { background-color: #10b981; color: #fff; transform: rotateY(180deg); }
-        .cell-completed .cell-front { background-color: #ecfdf5; color: #065f46; border-color: #34d399; }
-        
-        .type-quiz { border-top: 5px solid #f43f5e; }
-        .type-mission { border-top: 5px solid #0ea5e9; }
-
-        /* 결과 스크린샷용 모달 */
-        #screenshotModal {
-            display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9);
-            z-index: 200; align-items: center; justify-content: center; padding: 1.5rem;
+        .bingo-cell.status-success {
+            background: #4f46e5;
+            color: #ffffff;
+            transform: scale(0.96);
+        }
+        .bingo-cell.status-error {
+            background: #ef4444;
+            color: #ffffff;
+            animation: shake 0.4s ease-in-out;
+        }
+        .location-badge {
+            font-size: 0.45rem;
+            color: #6366f1;
+            margin-bottom: 2px;
+            font-weight: 800;
+            background: #f0f1ff;
+            padding: 1px 4px;
+            border-radius: 4px;
+        }
+        .status-success .location-badge, .status-error .location-badge {
+            background: rgba(255,255,255,0.2);
+            color: #ffffff;
+        }
+        .answer-preview {
+            margin-top: 3px;
+            font-size: 0.5rem;
+            opacity: 0.8;
+            font-weight: 400;
+            max-width: 90%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #modal {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            display: none;
+        }
+        #modal.active {
+            display: flex;
         }
     </style>
 </head>
-<body class="p-4 max-w-md mx-auto">
+<body class="min-h-screen flex items-center justify-center p-4">
 
-    <!-- 1. 시작 화면: 이름 입력 -->
-    <div id="loginOverlay">
-        <div class="w-full bg-white rounded-[2.5rem] p-8 shadow-2xl text-center">
-            <div class="mb-6">
-                <span class="text-4xl">🏢</span>
-                <h1 class="text-2xl font-black text-slate-800 mt-2">도림고 송도 미션</h1>
-                <p class="text-slate-500 text-sm">이름과 학번을 입력하세요</p>
-            </div>
-            <div class="space-y-4">
-                <input type="text" id="userClass" placeholder="학번 (예: 10101)" 
-                    class="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:border-blue-500 text-center font-bold text-lg">
-                <input type="text" id="userName" placeholder="이름 (예: 홍길동)" 
-                    class="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:border-blue-500 text-center font-bold text-lg">
-                <button onclick="startApp()" 
-                    class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-lg shadow-blue-200 active:scale-95 transition-transform">
-                    빙고 시작하기
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. 메인 화면 -->
-    <header class="mb-6">
-        <div class="flex justify-between items-end mb-4">
-            <div>
-                <p class="text-blue-600 font-bold text-sm">2026 현장체험학습</p>
-                <h2 id="displayUser" class="text-2xl font-black text-slate-800">로딩 중...</h2>
-            </div>
-            <div class="text-right">
-                <span id="bingoCountTop" class="text-3xl font-black text-rose-500">0</span>
-                <span class="text-xs font-bold text-slate-400 block uppercase">Bingos</span>
-            </div>
+    <div id="entry-layer" class="w-full max-w-md glass-card p-8 rounded-[2rem] shadow-2xl z-20">
+        <div class="text-center mb-8">
+            <span class="inline-block px-3 py-1 bg-indigo-500/20 text-indigo-400 text-[10px] font-bold rounded-full mb-3 uppercase tracking-widest">Incheon Field Trip 2026</span>
+            <h1 class="text-2xl font-extrabold text-white mb-2 leading-tight">2026 도림고등학교<br>1학년 현장체험학습</h1>
+            <p class="text-slate-400 text-sm">미션을 완료하고 빙고판을 캡처하세요</p>
         </div>
         
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex justify-between items-center">
-            <div class="flex gap-4">
-                <div class="flex items-center text-[11px] font-bold text-slate-400">
-                    <span class="w-2 h-2 bg-rose-500 rounded-full mr-1.5"></span> 퀴즈
-                </div>
-                <div class="flex items-center text-[11px] font-bold text-slate-400">
-                    <span class="w-2 h-2 bg-sky-500 rounded-full mr-1.5"></span> 활동
-                </div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-1 ml-1 uppercase tracking-wider">Student ID</label>
+                <input type="text" id="input-id" placeholder="예: 10101" 
+                    class="w-full bg-slate-800/50 border-2 border-slate-700 rounded-2xl px-5 py-4 focus:border-indigo-500 outline-none transition-all text-white placeholder:text-slate-600">
             </div>
-            <p class="text-sm font-bold text-slate-600">성공: <span id="doneCount" class="text-emerald-500">0</span>/16</p>
-        </div>
-    </header>
-
-    <div class="bingo-grid" id="bingoBoard"></div>
-
-    <button onclick="showScreenshot()" class="mt-8 w-full py-4 bg-slate-800 text-white rounded-2xl font-bold shadow-xl active:scale-95 transition-transform">
-        📸 최종 인증화면 만들기 (캡처용)
-    </button>
-
-    <!-- 3. 문제 풀이 모달 -->
-    <div id="modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-6 z-50 backdrop-blur-sm">
-        <div class="bg-white rounded-[2rem] w-full max-w-sm p-8 shadow-2xl">
-            <div id="modalContent"></div>
-            <button onclick="closeModal()" class="mt-8 w-full py-4 bg-slate-50 text-slate-400 rounded-2xl font-bold text-xs">나중에 하기</button>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-1 ml-1 uppercase tracking-wider">Full Name</label>
+                <input type="text" id="input-name" placeholder="성함을 입력하세요" 
+                    class="w-full bg-slate-800/50 border-2 border-slate-700 rounded-2xl px-5 py-4 focus:border-indigo-500 outline-none transition-all text-white placeholder:text-slate-600">
+            </div>
+            <button onclick="initBingo()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-5 rounded-2xl shadow-xl shadow-indigo-500/20 transition-all transform active:scale-95">
+                개인 미션판 생성
+            </button>
         </div>
     </div>
 
-    <!-- 4. 결과 인증 모달 (스크린샷용) -->
-    <div id="screenshotModal">
-        <div class="bg-white rounded-[3rem] w-full max-w-sm p-10 text-center relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-rose-500"></div>
-            <div class="mb-8">
-                <p class="text-blue-600 font-black tracking-widest text-sm mb-2">MISSION COMPLETE</p>
-                <h3 id="resultName" class="text-3xl font-black text-slate-800 mb-1">10101 홍길동</h3>
-                <p class="text-slate-400 text-sm">도림고등학교 현장체험학습</p>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4 mb-8">
-                <div class="bg-slate-50 rounded-3xl p-6">
-                    <p class="text-xs font-bold text-slate-400 mb-1">빙고 달성</p>
-                    <p id="resultBingo" class="text-4xl font-black text-rose-500">0</p>
+    <div id="bingo-layer" class="hidden w-full max-w-md">
+        <div class="bg-white rounded-[2.5rem] p-6 shadow-2xl text-slate-900">
+            <div class="flex justify-between items-center mb-6 px-1">
+                <div>
+                    <h2 class="text-xl font-black text-indigo-950 tracking-tighter">DORIM MISSION</h2>
+                    <div id="user-info" class="text-[10px] font-bold text-indigo-500 tracking-widest mt-0.5 uppercase">
+                        <!-- ID & NAME -->
+                    </div>
                 </div>
-                <div class="bg-slate-50 rounded-3xl p-6">
-                    <p class="text-xs font-bold text-slate-400 mb-1">미션 완료</p>
-                    <p id="resultDone" class="text-4xl font-black text-emerald-500">0</p>
+                <div class="bg-indigo-50 px-4 py-2 rounded-2xl border border-indigo-100">
+                    <span id="score" class="text-sm font-black text-indigo-600 italic">0 / 16</span>
                 </div>
             </div>
 
-            <div class="bg-blue-50 text-blue-700 py-3 px-6 rounded-full inline-block font-bold text-sm mb-10">
-                인증 시각: <span id="resultTime"></span>
+            <div id="grid-container" class="bingo-grid">
+                <!-- Cells will be generated here -->
             </div>
 
-            <button onclick="closeScreenshot()" class="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold">돌아가기</button>
-            <p class="mt-4 text-[10px] text-slate-300">이 화면을 캡처해서 제출하세요!</p>
+            <div class="mt-6 space-y-4">
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p class="text-[11px] text-slate-500 leading-relaxed text-center font-semibold">
+                        📍 지정된 3곳의 장소에서 정답을 찾아 입력하세요.<br>
+                        모든 칸을 <span class="text-indigo-600">성공(파란색)</span>으로 만들고 캡처하세요!
+                    </p>
+                </div>
+                <div class="flex justify-between items-center text-[9px] text-slate-300 font-bold px-1 uppercase tracking-widest">
+                    <div id="ticket-id">DORIM-2026-X</div>
+                    <button onclick="location.reload()" class="text-indigo-300 hover:text-indigo-500 underline">초기화</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 z-50 items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-xs rounded-[2rem] p-8 shadow-2xl transform transition-all">
+            <div class="mb-6 text-center">
+                <div id="modal-loc" class="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] bg-indigo-50 py-1.5 px-3 rounded-full inline-block mb-3">LOCATION</div>
+                <p id="modal-q" class="text-lg font-bold text-slate-800 leading-tight">질문 데이터 로딩중...</p>
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="modal-input" placeholder="정답을 입력하세요" 
+                    class="w-full bg-slate-100 border-2 border-slate-100 rounded-2xl px-4 py-4 focus:border-indigo-500 outline-none text-slate-900 font-bold text-center transition-all">
+                <div class="flex gap-2">
+                    <button onclick="closeModal()" class="flex-1 bg-slate-100 text-slate-500 font-bold py-4 rounded-2xl hover:bg-slate-200 transition-all">취소</button>
+                    <button onclick="checkAnswer()" class="flex-1 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-500 shadow-lg shadow-indigo-200 transition-all">제출</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        const bingoData = [
-            { id: 1, type: 'quiz', loc: '역사박물관', title: '인천의 별명', q: '인천은 1883년 이곳을 통해 외국의 문물을 가장 먼저 받아들였습니다. 이 행위를 무엇이라 할까요?', a: '개항' },
-            { id: 2, type: 'mission', loc: '센트럴파크', title: '거대 조형물', task: '공원 어딘가에 있는 거대한 토끼 조형물이나 사슴을 찾아 팀원과 사진 찍기!', hint: '사슴 농장 근처를 확인해보세요.' },
-            { id: 3, type: 'quiz', loc: '문자박물관', title: '점토판 문자', q: '메소포타미아 문명에서 점토판에 새겨 썼던 끝이 뾰족한 문자 이름은?', a: '쐐기문자' },
-            { id: 4, type: 'mission', loc: 'G타워', title: '스마트 기술', task: '홍보관에서 신기했던 스마트 시티 기술 하나를 사진 찍고 이유 메모하기!', hint: '무인 관제 시스템 등을 보세요.' },
-            { id: 5, type: 'mission', loc: '역사박물관', title: '옛날 포스터', task: '전시된 옛날 광고지나 포스터 중 가장 재밌는 것 하나를 찍기!', hint: '근대 생활사 코너에 있습니다.' },
-            { id: 6, type: 'quiz', loc: 'G타워', title: '전망대 높이', q: 'G타워 전망대는 건물의 몇 층에 위치해 있을까요? (숫자만)', a: '33' },
-            { id: 7, type: 'mission', loc: '문자박물관', title: '미래 메시지', task: '박물관 내 체험존에서 나만의 문자를 만들어 전송하고 인증샷!', hint: '1층 체험 코너를 확인하세요.' },
-            { id: 8, type: 'quiz', loc: '센트럴파크', title: '공원 디자인', q: '송도 센트럴파크는 뉴욕의 이 공원을 모델로 만들었습니다. 어디일까요?', a: '센트럴파크' },
-            { id: 9, type: 'quiz', loc: '문자박물관', title: '금속활자의 힘', q: '고려 시대에 만들어진 세계 최초의 금속 활자본 이름은?', a: '직지심체요절' },
-            { id: 10, type: 'mission', loc: '역사박물관', title: '도심 속 한옥', task: '역사박물관 창밖에서 보이는 한옥마을의 전경을 예쁘게 촬영하기!', hint: '박물관 위층 창가에서 잘 보입니다.' },
-            { id: 11, type: 'quiz', loc: '센트럴파크', title: '수로의 길이', q: '센트럴파크 해수로는 약 몇 km일까요? (숫자만)', a: '2' },
-            { id: 12, type: 'mission', loc: 'G타워', title: '인천대교 배경', task: '전망대에서 인천대교가 가장 길게 보이는 지점을 찾아 풍경 찍기!', hint: '서해 바다 쪽 통유리를 확인하세요.' },
-            { id: 13, type: 'mission', loc: '센트럴파크', title: '트라이보울 반사', task: '트라이보울 주변 수면에 비친 건물의 반영 사진 찍기!', hint: '물가 주변을 살펴보세요.' },
-            { id: 14, type: 'quiz', loc: '역사박물관', title: '매립의 역사', q: '송도는 바다를 메워 만든 땅입니다. 이 작업을 무엇이라 할까요?', a: '간척' },
-            { id: 15, type: 'quiz', loc: 'G타워', title: '국제기구', q: 'G타워에 입주한 기후 변화 관련 국제기구는 녹색기후○○입니다.', a: '기금' },
-            { id: 16, type: 'mission', loc: '문자박물관', title: '흰색 곡선의 미', task: '박물관 건물의 곡선이 잘 드러나도록 예술적인 각도로 사진 찍기!', hint: '멀리서 바라보는 각도가 좋습니다.' }
+        const LOCATIONS = ["인천도시역사박물관", "국립세계문자박물관", "G타워 IFEZ 홍보관"];
+        
+        const quizMaster = [
+            { l: LOCATIONS[0], q: "인천의 옛 이름 중 '거친 들판'이라는 뜻은?", a: "미추홀" },
+            { l: LOCATIONS[0], q: "개항기 인천에 설치된 최초의 서구식 공원은?", a: "자유공원" },
+            { l: LOCATIONS[0], q: "1883년 인천이 외국에 문을 연 사건은?", a: "개항" },
+            { l: LOCATIONS[0], q: "인천항의 조수간만 차를 극복하는 장치 이름은?", a: "갑문" },
+            { l: LOCATIONS[0], q: "근대 인천에서 외교관들이 묵던 호텔 이름은?", a: "대불호텔" },
+            { l: LOCATIONS[1], q: "인류 최초의 문자, 점토판에 새겨진 문자는?", a: "쐐기문자" },
+            { l: LOCATIONS[1], q: "이집트에서 종이 대신 사용한 식물은?", a: "파피루스" },
+            { l: LOCATIONS[1], q: "세종대왕이 창제한 우리나라 고유 문자는?", a: "훈민정음" },
+            { l: LOCATIONS[1], q: "한글 창제 원리가 기록된 국보급 책은?", a: "해례본" },
+            { l: LOCATIONS[1], q: "로제타석 발견으로 해독된 고대 문자는?", a: "이집트문자" },
+            { l: LOCATIONS[2], q: "인천경제자유구역의 약자는?", a: "IFEZ" },
+            { l: LOCATIONS[2], q: "송도, 영종 외 나머지 한 구역은?", a: "청라" },
+            { l: LOCATIONS[2], q: "G타워 전망대에서 보이는 인공 수로의 이름은?", a: "센트럴파크" },
+            { l: LOCATIONS[2], q: "바다를 메워 만든 도시를 뜻하는 용어는?", a: "간척지" },
+            { l: LOCATIONS[2], q: "미래 도시 기술이 집약된 도시 모델은?", a: "스마트시티" }
         ];
 
-        let state = JSON.parse(localStorage.getItem('dorim_state')) || Array(16).fill(false);
-        let user = JSON.parse(localStorage.getItem('dorim_user')) || null;
-
-        function startApp() {
-            const name = document.getElementById('userName').value.trim();
-            const classNum = document.getElementById('userClass').value.trim();
-            if(!name || !classNum) return alert("이름과 학번을 모두 입력해주세요!");
-            
-            user = { name, class: classNum };
-            localStorage.setItem('dorim_user', JSON.stringify(user));
-            document.getElementById('loginOverlay').style.display = 'none';
-            render();
-        }
-
-        function render() {
-            if(!user) return;
-            document.getElementById('loginOverlay').style.display = 'none';
-            document.getElementById('displayUser').innerText = `${user.class} ${user.name}`;
-            
-            const board = document.getElementById('bingoBoard');
-            board.innerHTML = '';
-            
-            bingoData.forEach((data, i) => {
-                const cell = document.createElement('div');
-                cell.className = `bingo-cell ${state[i] ? 'cell-completed' : ''}`;
-                cell.innerHTML = `
-                    <div class="cell-inner ${state[i] ? 'is-flipped' : ''}" onclick="handleClick(${i})">
-                        <div class="cell-front type-${data.type}">
-                            <div class="flex flex-col items-center">
-                                <span class="text-[9px] text-slate-400 mb-1 uppercase">${data.loc}</span>
-                                <span class="leading-tight">${data.title}</span>
-                            </div>
-                        </div>
-                        <div class="cell-back"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
-                    </div>
-                `;
-                board.appendChild(cell);
+        // 부족한 문항(16개 미만일 경우 대비)을 장소별로 자동 생성
+        while (quizMaster.length < 40) {
+            const loc = LOCATIONS[quizMaster.length % 3];
+            quizMaster.push({
+                l: loc,
+                q: `${loc}에서 찾은 가장 인상 깊은 전시물의 이름은?`,
+                a: "미션" // '미션'이라고 입력하면 정답 처리되거나, 자유 정답 형태
             });
-            updateStats();
         }
 
-        function handleClick(i) {
-            if(state[i]) return;
-            const data = bingoData[i];
-            const modal = document.getElementById('modal');
-            const content = document.getElementById('modalContent');
-            
-            let html = `<div class="mb-2 px-2 py-1 bg-slate-100 rounded text-[10px] font-bold text-slate-500 inline-block">${data.loc}</div>
-                        <h2 class="text-2xl font-black text-slate-800 mb-6">${data.title}</h2>`;
-            
-            if(data.type === 'quiz') {
-                html += `<div class="bg-slate-50 p-6 rounded-2xl mb-4 font-medium">${data.q}</div>
-                         <input type="text" id="ansIn" placeholder="정답 입력" class="w-full p-4 border rounded-2xl text-center font-bold outline-none focus:border-rose-400">
-                         <button onclick="check(${i})" class="w-full py-4 bg-rose-500 text-white rounded-2xl font-bold mt-4">정답 확인</button>`;
-            } else {
-                html += `<div class="bg-sky-50 p-6 rounded-2xl mb-4 text-sky-900 font-medium">${data.task}</div>
-                         <p class="text-slate-400 text-xs italic mb-8">💡 힌트: ${data.hint}</p>
-                         <button onclick="done(${i})" class="w-full py-4 bg-sky-500 text-white rounded-2xl font-bold">미션 완료!</button>`;
+        let currentData = [];
+        let selectedIndex = null;
+        let correctCount = 0;
+
+        function initBingo() {
+            const id = document.getElementById('input-id').value.trim();
+            const name = document.getElementById('input-name').value.trim();
+
+            if (!id || !name) {
+                return;
             }
-            content.innerHTML = html;
-            modal.style.display = 'flex';
+
+            document.getElementById('entry-layer').classList.add('hidden');
+            document.getElementById('bingo-layer').classList.remove('hidden');
+            document.getElementById('user-info').innerText = `${id} | ${name}`;
+            document.getElementById('ticket-id').innerText = `DORIM-${id}-${Math.random().toString(36).substr(2,4).toUpperCase()}`;
+
+            // 16개 무작위 선택 (오류 방지를 위해 셔플 로직 강화)
+            currentData = [...quizMaster]
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 16)
+                .map(item => ({ ...item, state: 'none', user: '' }));
+
+            renderGrid();
         }
 
-        function check(i) {
-            const val = document.getElementById('ansIn').value.trim().replace(/\s/g, '');
-            if(val === bingoData[i].a.replace(/\s/g, '')) done(i);
-            else alert("정답이 아닙니다!");
+        function renderGrid() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+
+            currentData.forEach((item, i) => {
+                const cell = document.createElement('div');
+                cell.className = `bingo-cell status-${item.state}`;
+                
+                const loc = document.createElement('div');
+                loc.className = 'location-badge';
+                loc.innerText = item.l.split(' ')[0]; // 장소명 축약 표시
+                
+                const q = document.createElement('div');
+                q.innerText = item.q.length > 20 ? item.q.substring(0, 18) + '..' : item.q;
+
+                cell.appendChild(loc);
+                cell.appendChild(q);
+
+                if (item.user) {
+                    const ans = document.createElement('div');
+                    ans.className = 'answer-preview';
+                    ans.innerText = `${item.state === 'success' ? '정답' : '오답'}: ${item.user}`;
+                    cell.appendChild(ans);
+                }
+
+                cell.onclick = () => openModal(i);
+                container.appendChild(cell);
+            });
         }
 
-        function done(i) {
-            state[i] = true;
-            localStorage.setItem('dorim_state', JSON.stringify(state));
-            closeModal();
-            render();
-        }
-
-        function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
-        function updateStats() {
-            const done = state.filter(s => s).length;
-            document.getElementById('doneCount').innerText = done;
+        function openModal(index) {
+            if (currentData[index].state === 'success') return;
             
-            let bingos = 0;
-            const lines = [[0,1,2,3],[4,5,6,7],[8,9,10,11],[12,13,14,15],[0,4,8,12],[1,5,9,13],[2,6,10,14],[3,7,11,15],[0,5,10,15],[3,6,9,12]];
-            lines.forEach(l => { if(l.every(idx => state[idx])) bingos++; });
-            document.getElementById('bingoCountTop').innerText = bingos;
+            selectedIndex = index;
+            const item = currentData[index];
+            
+            document.getElementById('modal-loc').innerText = item.l;
+            document.getElementById('modal-q').innerText = item.q;
+            document.getElementById('modal-input').value = item.user;
+            document.getElementById('modal').classList.add('active');
+            
+            setTimeout(() => document.getElementById('modal-input').focus(), 100);
         }
 
-        function showScreenshot() {
-            document.getElementById('resultName').innerText = `${user.class} ${user.name}`;
-            document.getElementById('resultBingo').innerText = document.getElementById('bingoCountTop').innerText;
-            document.getElementById('resultDone').innerText = document.getElementById('doneCount').innerText;
-            document.getElementById('resultTime').innerText = new Date().toLocaleString();
-            document.getElementById('screenshotModal').style.display = 'flex';
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            selectedIndex = null;
         }
 
-        function closeScreenshot() { document.getElementById('screenshotModal').style.display = 'none'; }
+        function checkAnswer() {
+            if (selectedIndex === null) return;
+            
+            const input = document.getElementById('modal-input').value.trim();
+            if (!input) return;
 
-        window.onload = () => { if(user) render(); };
+            const target = currentData[selectedIndex];
+            target.user = input;
+
+            // 정답 비교 로직 (공백 제거, 소문자화)
+            const cleanInput = input.replace(/\s+/g, '').toLowerCase();
+            const cleanAnswer = target.a.replace(/\s+/g, '').toLowerCase();
+
+            // '미션' 퀴즈의 경우 아무 내용이나 쓰면 통과
+            const isCorrect = (target.a === "미션" && input.length > 1) || (cleanInput === cleanAnswer);
+
+            if (isCorrect) {
+                if (target.state !== 'success') correctCount++;
+                target.state = 'success';
+            } else {
+                target.state = 'error';
+            }
+
+            updateScore();
+            renderGrid();
+            closeModal();
+        }
+
+        function updateScore() {
+            const scoreEl = document.getElementById('score');
+            scoreEl.innerText = correctCount === 16 ? "ALL CLEAR! 🏆" : `${correctCount} / 16`;
+            if (correctCount === 16) scoreEl.classList.add('animate-bounce');
+        }
+
+        // 엔터키 지원
+        document.getElementById('modal-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkAnswer();
+        });
     </script>
 </body>
 </html>
